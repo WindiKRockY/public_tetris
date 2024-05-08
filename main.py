@@ -8,7 +8,12 @@ MAP_SIZE = 30
 ROWS, COLS = 21,10
 FPS = 6
 
-
+mixer.init()
+pygame.mixer.music.load('music_efects/window_music.mp3')
+pygame.mixer.music.play()
+pygame.mixer.music.set_volume(0.2)
+remove_row_music = pygame.mixer.Sound('music_efects/remove_row.mp3')
+#win_music = pygame.mixer.music.load("music_efects/window_music.mp3")
 
 GRAY = (128, 128, 128) 
 SADDLE_BROWN = (139,69,19) 
@@ -32,9 +37,8 @@ MIDNIGHTBLUE = (25,25,112)
 SILVER = (192,192,192)
 
 
-
 frame = image.load('images/pngwing.com.png')
-btn_menu= image.load('images/free-icon-menu-5949637.png')
+#btn_menu= image.load('images/free-icon-menu-5949637.png')
 bg_game = image.load('images/Wall 800 x 800, 6c24e0ce-9a4f-40e0-9ed7-abbb6b5e453b.png')
 #row_anim = image.load('images\abstract-surface-and-textures-of-white-concrete-stone-wall.jpg')
 
@@ -49,7 +53,6 @@ frame_blur = pygame.transform.smoothscale(frame_blur, (WIDTH, HEIGHT))
 # file = open("results", "r")
 # init_best_result = int(file.readline())
 # file.close()
-
 
 class Images(sprite.Sprite):
     def __init__(self, filename, x, y, speed, w, h):
@@ -252,7 +255,26 @@ def remove_rows(board):
     for row in fill_rows:
         del board[row]
         board.insert(0, [0] * COLS)
+        remove_row_effecr.play()
     return len(fill_rows)
+
+# def menu_pause(window,Button):
+#     pygame.draw.rect(window, blur_win(), [0, 0, 800, 700], 0 , 4)
+#     menu_btn = Button("M E N U", 60, 15, 70, 70, BLACK, 60) 
+def draw_settings_pause(window,sound_play):
+    font = pygame.font.Font('fonts/arcade.ttf', 42)
+    font2 = pygame.font.Font('fonts/arcade.ttf', 45)
+    music_lb = font2.render('M U S I C ', True, (255, 255, 255))
+    on_music_lb = font.render('ON',True,(255, 255, 255))
+    off_music_lb = font.render('OF',True,(255, 255, 255))
+    window.blit(music_lb , (210,268))
+    if sound_play:
+        pygame.mixer.music.unpause()    
+        window.blit(on_music_lb , (380,270))
+    else:
+        pygame.mixer.music.pause()
+        window.blit(off_music_lb , (380,270))
+
 
 def draw_restart_stop(window,text_font,mini_text_font):
     pygame.draw.rect(window, GRAY, [0, 0, 800, 800], 0 , 5)
@@ -280,6 +302,18 @@ def get_max_score():
 
     return points 
     
+# def set_volume_music(sound_play):
+#     if sound_play:
+#         pygame.mixer.music.pause()
+#         sound_play = False
+#     else:
+#         pygame.mixer.music.unpause()
+#         sound_play = True
+
+        
+#     pygame.mixer.music.load(win_music)
+#     mixer.music.set_volume(0.3)
+#     mixer.music.play(-1)
     
 
 def blur_win(window):
@@ -287,6 +321,7 @@ def blur_win(window):
     pygame.display.update()
     
 def main(): 
+    global sound_play
     logo = Images('images/photo_5310251252598300299_x.jpg',400,400,0,780,780)         
     #global init_best_result
     points = 0
@@ -301,12 +336,22 @@ def main():
     
     block_color = [(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)) for _ in range(25)]
     line_color = [(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)) for _ in range(25)]
-
-    menu_bg = Images('images/picture 800 x 8 4f5795c0-6a9e-41f5-bba1-06ec9ba43fd5.png',0,0,0,800,800)
-    btn_play = Button(" S  t  a  r  t", 270, 210, 220, 170, WHITE, 75)
+    pause_bg = Images('images/pause_bg.png',0,0,0,800,800)
+    settings_bg = Images('images/settings.png',0,0,0,800,800)
+    menu_bg = Images('images/picture 800 x 8 4f5795c0-6a9e-41f5-bba1-06ec9ba43fd5.png',0,0,0,800,700)
+    settings_menu_bg = Images('images/settings_menu_bg.png',0,0,0,800,700)
+    on_volume_btn = Images('images/soundOnWhite.png',450,260,0,60,60)
+    off_volume_btn = Images('images/soundOffWhite.png',450,260,0,60,60)
+    sound_play = True 
+    volume_changed = False
+    btn_play = Button(" S  t  a  r  t", 270, 200, 220, 170, WHITE, 75)
+    btn_settings = Button("S  E  T  T  I  N  G  S", 275, 300, 220, 170, WHITE, 72)
     btn_title = Title(" T  E  T  R  I  S", 255, 2, 220, 170, BLACK, 75)
-    btn_menu = Button("M E N U", 60, 15, 70, 70, BLACK, 60)
-    
+    pause_title = Title( " P A U S E ",260,-5 ,220,170 , YELLOW , 80)
+    btn_pause = Button("P A U S E", 60, 15, 70, 70, BLACK, 60)
+    menu_pause_btn = Button("M E N U", 300, 160, 150, 150, BLACK, 65) 
+    settings_pause_btn = Button("S E T T I N G S", 300, 250, 150, 150, BLACK, 65) 
+    continue_pause_btn = Button("C O N T I N U E", 300 , 360 , 150 , 150 , BLACK ,65)
     
     board = [[0 for _ in range(COLS)] for _ in range(ROWS)]
     run = True
@@ -315,11 +360,12 @@ def main():
     fall_time = 0
     screen = 'menu'
     while run:
-        if screen == 'menu':
+        if screen == 'menu':            
             #board = create_board()
             pygame.time.wait(1000)
             menu_bg.reset(window)
             btn_play.reset(window)
+            btn_settings.reset(window)
             btn_title.reset(window)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -329,13 +375,14 @@ def main():
                     x, y = event.pos
                     if btn_play.x <= x <= btn_play.x + btn_play.width and btn_play.y <= y <= btn_play.y + btn_play.height:
                         screen = 'run'
+                    if btn_settings.x <= x <= btn_settings.x + btn_settings.width and btn_settings.y <= y <= btn_settings.y + btn_settings.height:
+                        screen = 'menu_settings'
             
-            display.update()
-            clock.tick(60)
+            pygame.display.update()
 
         if screen == 'run':
             window.blit(bg_game,(0,0))
-            btn_menu.reset(window)        
+            btn_pause.reset(window)        
             #points = 0
             draw_board(window, board, current_block, current_row, current_col, block_color,points,best_result)
             if current_block is None:
@@ -373,11 +420,94 @@ def main():
                     run = False
                 if event.type == MOUSEBUTTONDOWN:
                     x, y = event.pos
-                    if btn_menu.x <= x <= btn_play.x + btn_menu.width and btn_menu.y <= y <= btn_menu.y + btn_menu.height:
+                    if btn_pause.x <= x <= btn_pause.x + btn_pause.width and btn_pause.y <= y <= btn_pause.y + btn_pause.height:
+                        screen = 'pause'
+                        # board = create_board()
+                        #current_block = None
+        if screen == "menu_settings":
+            settings_menu_bg.reset(window)
+            draw_settings_pause(window,sound_play)
+            
+            #on_volume_btn.reset(window)
+            if sound_play:
+                on_volume_btn.reset(window)
+                if volume_changed:
+                    off_volume_btn.kill()  # Видаляємо кнопку вимкненого звуку
+                    volume_changed = False
+            else:
+                off_volume_btn.reset(window)
+                if volume_changed:
+                    on_volume_btn.kill()  # Видаляємо кнопку включеного звуку
+                    volume_changed = False
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    run = False
+                if event.type == MOUSEBUTTONDOWN:
+                    x,y = event.pos
+                    if on_volume_btn.rect.x <= x <= on_volume_btn.rect.x + on_volume_btn.rect.width and on_volume_btn.rect.y <= y <= on_volume_btn.rect.y + on_volume_btn.rect.height:
+                        sound_play = not sound_play
+                        volume_changed = True
+                        if sound_play:
+                            pygame.mixer.music.unpause()
+                        else:
+                            pygame.mixer.music.pause()
+            pygame.display.update()
+        if screen == 'pause':
+            pause_bg.reset(window)
+            menu_pause_btn.reset(window)
+            settings_pause_btn.reset(window)
+            continue_pause_btn.reset(window)
+            pause_title.reset(window)
+            
+            
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    run = False
+                if event.type == MOUSEBUTTONDOWN:
+                    x,y = event.pos
+                    if settings_pause_btn.x <= x <= settings_pause_btn.x + settings_pause_btn.width and settings_pause_btn.y <= y <= settings_pause_btn.y + settings_pause_btn.height:
+                        screen = 'settings_pause'
+                    if menu_pause_btn.x <= x <= menu_pause_btn.x + menu_pause_btn.width and menu_pause_btn.y <= y <= menu_pause_btn.y + menu_pause_btn.height:
                         screen = 'menu'
                         board = create_board()
                         current_block = None
-                        
+                    if continue_pause_btn.x <= x <= continue_pause_btn.x + continue_pause_btn.width and continue_pause_btn.y <= y <= continue_pause_btn.y + continue_pause_btn.height:
+                        screen = 'run'
+
+            display.update()
+            clock.tick(60)
+
+        if screen == "settings_pause":
+            settings_bg.reset(window)
+            draw_settings_pause(window,sound_play)
+            #on_volume_btn.reset(window)
+            if sound_play:
+                on_volume_btn.reset(window)
+                if volume_changed:
+                    off_volume_btn.kill()  # Видаляємо кнопку вимкненого звуку
+                    volume_changed = False
+            else:
+                off_volume_btn.reset(window)
+                if volume_changed:
+                    on_volume_btn.kill()  # Видаляємо кнопку включеного звуку
+                    volume_changed = False
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    run = False
+                if event.type == MOUSEBUTTONDOWN:
+                    x,y = event.pos
+                    if on_volume_btn.rect.x <= x <= on_volume_btn.rect.x + on_volume_btn.rect.width and on_volume_btn.rect.y <= y <= on_volume_btn.rect.y + on_volume_btn.rect.height:
+                        sound_play = not sound_play
+                        volume_changed = True
+                        if sound_play:
+                            pygame.mixer.music.unpause()
+                        else:
+                            pygame.mixer.music.pause()
+            pygame.display.update()
+            
+
         if screen == 'restart':
             board = create_board()
             blur_win(window)
@@ -408,7 +538,7 @@ def main():
 
 
             display.update()
-            clock.tick(10)
+            clock.tick(60)
 
 
      
