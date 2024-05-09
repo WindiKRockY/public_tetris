@@ -6,13 +6,17 @@ from pygame.locals import *
 WIDTH, HEIGHT = 800, 700
 MAP_SIZE = 30
 ROWS, COLS = 21,10
-FPS = 6
+#FPS = 60
 
 mixer.init()
 pygame.mixer.music.load('music_efects/menu_music.mp3')
 pygame.mixer.music.play()
 pygame.mixer.music.set_volume(0.3)
 remove_row_music = pygame.mixer.Sound('music_efects/remove_row.mp3')
+congratulations_music = pygame.mixer.Sound('music_efects/congratulations.mp3')
+game_over_music = pygame.mixer.Sound('music_efects/game_over.mp3')
+game_over_music.set_volume(0.4)
+congratulations_music.set_volume(0.4)
 #win_music = pygame.mixer.music.load("music_efects/window_music.mp3")
 
 GRAY = (128, 128, 128) 
@@ -111,7 +115,7 @@ class Frame(Sprite):
         super().__init__(sprite_img,width,height,x,y)
         
     
-frame = Frame(frame,340,670,205,10)
+frame = Frame(frame,340,670,210,10)
 #btn_menu = Frame(btn_menu,55,70,20,10)
         
 def create_blocks():
@@ -196,8 +200,9 @@ def create_blocks():
     ]
     return random.choice(blocks)
 
-def create_board():
+def create_board(points):
     return [[0 for _ in range(COLS)] for _ in range(ROWS)]
+    points = 0
 
 def can_move(block, board, row, col):
     for i in range(len(block)):
@@ -230,15 +235,15 @@ def draw_board(window, board, current_block, current_row, current_col, block_col
     for row in range(ROWS):
         for col in range(COLS):
             if board[row][col] != 0:
-                pygame.draw.rect(window, block_color[board[row][col]], (col * MAP_SIZE + 225, row * MAP_SIZE + 20, MAP_SIZE, MAP_SIZE ))
-                pygame.draw.rect(window, BLACK, (col * MAP_SIZE + 225, row * MAP_SIZE+20, MAP_SIZE , MAP_SIZE), 4)
+                pygame.draw.rect(window, block_color[board[row][col]], (col * MAP_SIZE + 230, row * MAP_SIZE + 20, MAP_SIZE, MAP_SIZE ))
+                pygame.draw.rect(window, BLACK, (col * MAP_SIZE + 230, row * MAP_SIZE+20, MAP_SIZE , MAP_SIZE), 4)
     if current_block:
         
         for i in range(len(current_block)):
             for j in range(len(current_block[i])):
                 if current_block[i][j] != 0:
-                    pygame.draw.rect(window, block_color[current_block[i][j]]  , ((current_col + j) * MAP_SIZE + 225, (current_row + i) * MAP_SIZE + 20, MAP_SIZE , MAP_SIZE))
-                    pygame.draw.rect(window, WHITE, ((current_col + j) * MAP_SIZE + 225 , (current_row + i) * MAP_SIZE +20, MAP_SIZE , MAP_SIZE), 3)
+                    pygame.draw.rect(window, block_color[current_block[i][j]]  , ((current_col + j) * MAP_SIZE + 230, (current_row + i) * MAP_SIZE + 20, MAP_SIZE , MAP_SIZE))
+                    pygame.draw.rect(window, WHITE, ((current_col + j) * MAP_SIZE + 230 , (current_row + i) * MAP_SIZE +20, MAP_SIZE , MAP_SIZE), 3)
     pygame.display.update()
 
 
@@ -286,14 +291,16 @@ def draw_control_settings(window):
     window.blit(turn_move_text , (170,380))
 
 
-def draw_restart_stop(window,text_font,mini_text_font):
-    game_over_text = text_font.render("GAME  OVER",True,YELLOW)
-    restart_text = mini_text_font.render("Press  SPACE  to  restart",True,YELLOW)
-    menu_text = mini_text_font.render("Press  ESCAPE  to  enter  the  menu ",True,YELLOW)
-    window.blit(game_over_text, (210, 270))
-    window.blit(restart_text, (150, 360))
-    window.blit(menu_text,(100,430))
-    pygame.display.update()
+def draw_restart_stop(window,text_font,mini_text_font,points = 0):
+    game_over_text = text_font.render("GAME  OVER",True,WHITE)
+    restart_text = mini_text_font.render("Press  SPACE  to  restart",True,WHITE)
+    menu_text = mini_text_font.render("Press  ESCAPE  to  enter  the  menu ",True,WHITE)
+    final_points_text = text_font.render('POINTS    ' + str(points), True, WHITE)
+    window.blit(final_points_text , (190 , 470))
+    window.blit(game_over_text, (210, 160))
+    window.blit(restart_text, (130, 270))
+    window.blit(menu_text,(70,370))
+    
     
 def update_points(new_score):
     points = get_max_score()
@@ -328,7 +335,26 @@ def get_max_score():
 def blur_win(window):
     window.blit(blur, (0, 0))
     pygame.display.update()
-    
+
+def levels(points,fall_time,clock):
+    if points >= 300:
+        fall_time = 0.8
+    if points >= 700:
+        fall_time = 1.3
+    if points >= 1000:
+        fall_time = 1.6
+    if points >= 1500:
+        fall_time = 2.0
+    if points >= 2000:
+        fall_time = 2.5
+
+def new_best_result(window,text_font,best_result=0):
+    new_best_result_text = text_font.render('New  Best  Result ' + str(best_result),True,YELLOW)
+    congratulations_text = text_font.render('CONGRATULATIONS',True,YELLOW)
+    window.blit(congratulations_text , (112 , 160))
+    window.blit(new_best_result_text , (80,310))
+    congratulations_music.play()
+
 def main(): 
     global sound_play
     logo = Images('images/photo_5310251252598300299_x.jpg',400,400,0,780,780)         
@@ -340,7 +366,7 @@ def main():
     window = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Tetris")
     clock = pygame.time.Clock()
-    TEXT_FONT = pygame.font.Font('fonts/arcade.ttf',75)
+    TEXT_FONT = pygame.font.Font('fonts/arcade.ttf',70)
     MINI_TEXT_FONT = pygame.font.Font('fonts/arcade.ttf',45)
     
     block_color = [(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)) for _ in range(25)]
@@ -349,12 +375,14 @@ def main():
     settings_bg = Images('images/settings.png',0,0,0,800,800)
     menu_bg = Images('images/picture 800 x 8 4f5795c0-6a9e-41f5-bba1-06ec9ba43fd5.png',0,0,0,800,700)
     left_move_img = Images('images/control_left.png',135,280,0,70,65)
+    new_best_result_bg = Images('images/new_best_result_menu.png',0,0,0,800,700)
     right_move_img = Images('images/control_right.png',135,180,0,70,65)
     turn_move_img = Images('images/control_turn.png',135,380,0,70,65)
     settings_menu_bg = Images('images/settings_menu_bg.png',0,0,0,800,700)
     on_volume_btn = Images('images/soundOnWhite.png',495,264,0,63,63)
     off_volume_btn = Images('images/soundOffWhite.png',495,264,0,63,63)
     game_over_bg = Images('images/game_over_bg.png',0,0,0,800,700)
+    gray_bg = Images('images/gray_bg.jpg',220,30,0,310,650)
     sound_play = True 
     volume_changed = False
     btn_play = Button(" S  t  a  r  t", 270, 180, 220, 170, WHITE, 75)
@@ -366,12 +394,19 @@ def main():
     pause_title = Title( " P A U S E ",260,-5 ,220,170 , YELLOW , 80)
     settings_menu_title = Title( "S E T T I N G S",270,-5 ,220,170 , YELLOW , 80)
     btn_pause = Button("P A U S E", 65, 15, 70, 70, YELLOW, 60)
-    menu_pause_btn = Button("M E N U", 300, 160, 150, 150, BLACK, 65) 
+    menu_pause_btn = Button("M E N U", 300, 120, 150, 150, BLACK, 65) 
     menu_settings_btn = Button("M  E  N  U", 290, 450, 150, 150, WHITE, 65) 
-    settings_pause_btn = Button("S E T T I N G S", 300, 250, 150, 150, BLACK, 65) 
-    continue_pause_btn = Button("C O N T I N U E", 300 , 360 , 150 , 150 , BLACK ,65)
+    settings_pause_btn = Button("S E T T I N G S", 300, 220, 150, 150, BLACK, 65) 
+    restart_pause_btn = Button("R  E S T A R  T", 310, 300, 150, 150, BLACK, 65) 
+    continue_pause_btn = Button("C O N T I N U E", 300 , 390 , 150 , 150 , BLACK ,65)
     quit_menu_btn = Button("Q  U  I  T", 40 , 560 , 150 , 150 , WHITE ,65)
     quit_pause_btn = Button("Q  U  I  T", 40 , 560 , 150 , 150 , BLACK ,65)
+    quit_new_best_result_btn = Button("Q  U  I  T", 40 , 500 , 150 , 150 , YELLOW ,60)
+    menu_new_best_result_btn = Button("M E N U", 270 , 500 , 150 , 150 , YELLOW ,60)
+    restart_new_best_result_btn = Button("R E S T A R T", 550 , 500 , 150 , 150 , YELLOW ,60)
+
+
+
 
     
     board = [[0 for _ in range(COLS)] for _ in range(ROWS)]
@@ -406,7 +441,10 @@ def main():
 
         if screen == 'run':
             window.blit(bg_game,(0,0))
-            btn_pause.reset(window)        
+            gray_bg.reset(window)    
+            btn_pause.reset(window)   
+            levels(points,fall_time,clock)
+            
             #points = 0
             draw_board(window, board, current_block, current_row, current_col, block_color,points,best_result)
             if current_block is None:
@@ -438,7 +476,9 @@ def main():
             else:
                 board = update_board(current_block, current_row, current_col, board)
                 current_block = None
-            fall_time += clock.tick(FPS) / 1000
+            fall_time += clock.tick(5) / 1000
+            # if points >= 0:
+            #     fall_time += clock.tick(50) / 1000
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     run = False
@@ -448,6 +488,7 @@ def main():
                         screen = 'pause'
                         # board = create_board()
                         #current_block = None
+            
             pygame.display.update()
         if screen == 'menu_settings':
             settings_menu_bg.reset(window)
@@ -475,6 +516,7 @@ def main():
                     x,y = event.pos
                     if menu_settings_btn.x <= x <= menu_settings_btn.x + menu_settings_btn.width and menu_settings_btn.y <= y <= menu_settings_btn.y + menu_settings_btn.height:
                         screen = 'menu'
+                        points = 0
                     if on_volume_btn.rect.x <= x <= on_volume_btn.rect.x + on_volume_btn.rect.width and on_volume_btn.rect.y <= y <= on_volume_btn.rect.y + on_volume_btn.rect.height:
                         sound_play = not sound_play
                         volume_changed = True
@@ -511,7 +553,7 @@ def main():
             continue_pause_btn.reset(window)
             pause_title.reset(window)
             quit_pause_btn.reset(window)
-            
+            restart_pause_btn.reset(window)
             
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -522,13 +564,17 @@ def main():
                         screen = 'settings_pause'
                     if menu_pause_btn.x <= x <= menu_pause_btn.x + menu_pause_btn.width and menu_pause_btn.y <= y <= menu_pause_btn.y + menu_pause_btn.height:
                         screen = 'menu'
-                        board = create_board()
+                        board = create_board(points)
                         current_block = None
                     if continue_pause_btn.x <= x <= continue_pause_btn.x + continue_pause_btn.width and continue_pause_btn.y <= y <= continue_pause_btn.y + continue_pause_btn.height:
                         screen = 'run'
                     if quit_pause_btn.x <= x <= quit_pause_btn.x + quit_pause_btn.width and quit_pause_btn.y <= y <= quit_pause_btn.y + quit_pause_btn.height:
                         run = False
-                       
+                    if restart_pause_btn.x <= x <= restart_pause_btn.x + restart_pause_btn.width and restart_pause_btn.y <= y <= restart_pause_btn.y + restart_pause_btn.height:
+                        current_block = None
+                        create_board(points)
+                        screen = 'run'
+                        
             pygame.display.update()
             
 
@@ -572,11 +618,13 @@ def main():
             
 
         if screen == 'restart':
-            board = create_board()
+            game_over_music.play()
+            board = create_board(points)
             game_over_bg.reset(window)
-            draw_restart_stop(window, TEXT_FONT, MINI_TEXT_FONT)
+            draw_restart_stop(window, TEXT_FONT, MINI_TEXT_FONT,points)
             if best_result < points:
                 best_result = points
+                screen = 'new_best_result'
             # if points > init_best_result:
             #     init_best_result = points
             #     with open("results", "w") as file:
@@ -584,12 +632,12 @@ def main():
 
             keys = pygame.key.get_pressed()
             if keys[pygame.K_SPACE]:
-                create_board()  
+                create_board(points)  
                 points = 0
                 screen = 'run'
                 pygame.time.wait(900)
             elif keys[pygame.K_ESCAPE]:
-                create_board()  
+                create_board(points)  
                 points = 0
                 screen = 'menu'
 
@@ -598,7 +646,31 @@ def main():
                     run = False
 
             pygame.display.update()
-
+        
+        if screen == 'new_best_result':
+            new_best_result_bg.reset(window)
+            new_best_result(window,TEXT_FONT,best_result)
+            quit_new_best_result_btn.reset(window)
+            menu_new_best_result_btn.reset(window)
+            restart_new_best_result_btn.reset(window)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    run = False
+                if event.type == MOUSEBUTTONDOWN:
+                    x,y = event.pos
+                    if quit_new_best_result_btn.x <= x <= quit_new_best_result_btn.x + quit_new_best_result_btn.width and quit_new_best_result_btn.y <= y <= quit_new_best_result_btn.y + quit_new_best_result_btn.height:
+                        run = False
+                    if menu_new_best_result_btn.x <= x <= menu_new_best_result_btn.x + menu_new_best_result_btn.width and menu_new_best_result_btn.y <= y <= menu_new_best_result_btn.y + menu_new_best_result_btn.height:
+                        screen = 'menu'
+                        board = create_board(points)
+                        current_block = None
+                        points = 0
+                    if restart_new_best_result_btn.x <= x <= restart_new_best_result_btn.x + restart_new_best_result_btn.width and restart_new_best_result_btn.y <= y <= restart_new_best_result_btn.y +restart_new_best_result_btn.height:
+                        screen = 'run'
+                        board = create_board(points)
+                        current_block = None
+                        points = 0
+            pygame.display.update()
         
         window.fill(GRAY)
     pygame.quit()

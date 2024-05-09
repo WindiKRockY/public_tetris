@@ -13,6 +13,8 @@ pygame.mixer.music.load('music_efects/window_music.mp3')
 pygame.mixer.music.play()
 pygame.mixer.music.set_volume(0.2)
 remove_row_music = pygame.mixer.Sound('music_efects/remove_row.mp3')
+congratulations_music = pygame.mixer.Sound('music_efects/congratulations.mp3')
+
 #win_music = pygame.mixer.music.load("music_efects/window_music.mp3")
 
 GRAY = (128, 128, 128) 
@@ -319,7 +321,14 @@ def get_max_score():
 def blur_win(window):
     window.blit(blur, (0, 0))
     pygame.display.update()
-    
+
+def new_best_result(window,new_best_result_bg,mini_text_font,text_font,best_result=0):
+    new_best_result_bg.reset(window)
+    new_best_result_text = mini_text_font.render('New Best Result   ' + str(best_result),True,YELLOW)
+    congratulations_text = text_font.render('CONGRATULATIONS',True,YELLOW)
+    window.blit(congratulations_text , (210 , 270))
+
+
 def main(): 
     global sound_play
     logo = Images('images/photo_5310251252598300299_x.jpg',400,400,0,780,780)         
@@ -340,6 +349,8 @@ def main():
     settings_bg = Images('images/settings.png',0,0,0,800,800)
     menu_bg = Images('images/picture 800 x 8 4f5795c0-6a9e-41f5-bba1-06ec9ba43fd5.png',0,0,0,800,700)
     settings_menu_bg = Images('images/settings_menu_bg.png',0,0,0,800,700)
+    new_best_result_bg = Images('images/new_best_result_menu.png',0,0,0,800,700)
+    gray_bg = Images('images\gray_bg.jpg',200,100,0,340,670)
     on_volume_btn = Images('images/soundOnWhite.png',450,260,0,60,60)
     off_volume_btn = Images('images/soundOffWhite.png',450,260,0,60,60)
     sound_play = True 
